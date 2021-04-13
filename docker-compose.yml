@@ -1,31 +1,41 @@
 version: "3.9"  # optional since v1.27.0
 services:
     mongodb: 
-        image: mongo:4-bionic
+        image: "mongo:4-bionic"
         volumes: 
             - ./auth/data:/data/db
         ports: 
-            - 5000: 80
+            - 5000:80
     auth: 
-        build: ./auth
+        build: 
+            context: ./auth
+            dockerfile: Dockerfile.dev
         depends_on: 
             - mongodb
-        volumes: 
-            - ./auth:/usr/src/app
         environment:
-            JWT_SECRET: ${JWT_SECRET}
-            MONGODB_URL: ${MONGODB_URL}
+            JWT_SECRET: JWT_SECRET
+            MONGODB_URL: mongodb://mongodb/prodev-composed-auth
+        volumes: 
+            - ./auth/src:/usr/src/app/src
         ports: 
-            - 5001: 80
+            - 5001:80
     app: 
-        build: ./app
+        build: 
+            context: ./app
+            dockerfile: Dockerfile.dev
         volumes: 
-            - ./app:/usr/src/app
+            - ./app/data:/usr/src/app/data
+            - ./app/src:/usr/src/app/src
         ports: 
-            - 5002: 80
+            - 5002:80
     ghi:
-        build: ./ghi
-        volumes: 
-            - ./ghi:/todos.conf
-        ports: 
-            - 5003: 80
+        build: 
+            context: ./ghi
+            dockerfile: Dockerfile
+        depends_on:
+            - app
+            - auth
+        ports:
+            - "8910:80"
+        volumes:
+            - ./ghi/static:/usr/share/nginx/html
